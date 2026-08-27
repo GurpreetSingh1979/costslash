@@ -5,6 +5,9 @@ from costslash.scanners.waste_scanners import (
     scan_gp2_volumes,
     scan_unassociated_eips,
     scan_nat_gateways,
+    scan_rds_instances,
+    scan_s3_buckets,
+    scan_ecr_repositories,
 )
 
 
@@ -67,14 +70,6 @@ def get_mock_aws_payload() -> Dict[str, List[Dict[str, Any]]]:
                 "PublicIp": "52.86.110.99",
                 "Domain": "vpc",
             },
-            # 1 Associated Elastic IP (Not waste)
-            {
-                "AllocationId": "eipalloc-0123456789abcdef2",
-                "PublicIp": "34.195.80.201",
-                "AssociationId": "eipassoc-0123456789abcdef2",
-                "InstanceId": "i-0123456789abcdef0",
-                "Domain": "vpc",
-            },
         ],
         "nat_gateways": [
             # 1 Idle NAT Gateway in staging VPC
@@ -85,6 +80,31 @@ def get_mock_aws_payload() -> Dict[str, List[Dict[str, Any]]]:
                 "Tags": [{"Key": "Name", "Value": "staging-idle-nat-gateway"}],
             }
         ],
+        "rds_instances": [
+            # 1 Staging RDS instance running Multi-AZ 24/7
+            {
+                "DBInstanceIdentifier": "staging-postgres-db",
+                "DBInstanceClass": "db.t3.medium",
+                "DBInstanceStatus": "available",
+                "MultiAZ": True,
+            }
+        ],
+        "s3_buckets": [
+            # 1 S3 bucket missing lifecycle transitions
+            {
+                "Name": "company-historical-logs-backup",
+                "HasLifecycle": False,
+                "SizeGB": 450,
+            }
+        ],
+        "ecr_repos": [
+            # 1 ECR repo with accumulating untagged layers
+            {
+                "repositoryName": "backend-api-docker",
+                "untaggedImageCount": 24,
+                "untaggedSizeGB": 32,
+            }
+        ],
     }
 
 
@@ -92,15 +112,18 @@ def run_mock_scan(region: str = "us-east-1", account_id: str = "123456789012 (De
     """Runs a full scan across the mock AWS payload."""
     payload = get_mock_aws_payload()
     items = []
-    
+
     items.extend(scan_unattached_volumes(payload["volumes"], region=region))
     items.extend(scan_gp2_volumes(payload["volumes"], region=region))
     items.extend(scan_unassociated_eips(payload["addresses"], region=region))
     items.extend(scan_nat_gateways(payload["nat_gateways"], region=region))
+    items.extend(scan_rds_instances(payload["rds_instances"], region=region))
+    items.extend(scan_s3_buckets(payload["s3_buckets"], region=region))
+    items.extend(scan_ecr_repositories(payload["ecr_repos"], region=region))
 
     return ScanReport(
         account_id=account_id,
-        scan_timestamp="2026-08-27 16:20:00 UTC",
+        scan_timestamp="2026-08-27 17:00:00 UTC",
         region=region,
         items=items,
     )

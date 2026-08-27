@@ -8,7 +8,9 @@ class WasteCategory(str, Enum):
     GP2_TO_GP3_MIGRATION = "Legacy GP2 Volume Upgrades"
     UNUSED_ELASTIC_IP = "Unassociated Elastic IPs"
     IDLE_NAT_GATEWAY = "Idle / Underutilized NAT Gateways"
-    OLD_SNAPSHOTS = "Stale / Old EBS Snapshots"
+    DEV_RDS_SCHEDULING = "Dev/Staging RDS 24/7 Running"
+    S3_MISSING_LIFECYCLE = "S3 Missing Lifecycle / Cold Data"
+    ECR_UNTAGGED_IMAGES = "ECR Untagged / Stale Docker Layers"
 
 
 class WasteItem(BaseModel):
