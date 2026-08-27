@@ -4,7 +4,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich import box
-from costslash.models import ScanReport
+from costslash.models import ScanReport, WasteCategory
 
 # Ensure safe UTF-8 terminal encoding on Windows
 if sys.platform == "win32":
@@ -30,7 +30,7 @@ def render_scan_report(report: ScanReport, show_commands: bool = False):
     # 1. Executive Summary Panel
     summary_table = Table(show_header=False, box=None, padding=(0, 1))
     summary_table.add_row("[bold white]AWS Account:[/]", f"[cyan]{report.account_id}[/]")
-    summary_table.add_row("[bold white]Region:[/]", f"[yellow]{report.region}[/]")
+    summary_table.add_row("[bold white]Region Scope:[/]", f"[yellow]{report.region}[/]")
     summary_table.add_row("[bold white]Scan Timestamp:[/]", f"[dim]{report.scan_timestamp}[/]")
     summary_table.add_row("[bold white]Total Items Found:[/]", f"[bold]{len(report.items)} waste opportunities[/]")
     summary_table.add_row(
@@ -51,41 +51,70 @@ def render_scan_report(report: ScanReport, show_commands: bool = False):
         )
     )
 
-    # 2. Detailed Findings Table
-    table = Table(
-        title="[bold]Detected Waste & Optimization Levers[/]",
+    # 2. Comprehensive Category Audit Checklist (Shows ALL categories - Clean & Action Needed)
+    cat_table = Table(
+        title="[bold]Complete Category Audit Checklist[/]",
         box=box.ROUNDED,
         header_style="bold cyan",
         show_lines=True,
     )
-    table.add_column("Category", style="magenta", width=24)
-    table.add_column("Resource ID / Name", style="cyan", width=26)
-    table.add_column("Details", style="white")
-    table.add_column("Monthly Savings", justify="right", style="bold green", width=16)
+    cat_table.add_column("Audited Category", style="bold white", width=34)
+    cat_table.add_column("Status", justify="center", width=20)
+    cat_table.add_column("Monthly Savings", justify="right", width=18)
+    cat_table.add_column("Yearly Impact", justify="right", width=18)
 
-    for item in report.items:
-        table.add_row(
-            item.category.value,
-            f"[bold]{item.resource_id}[/]\n[dim]{item.resource_name}[/]",
-            item.details,
-            f"${item.monthly_waste_usd:,.2f}/mo",
-        )
+    category_waste_map = report.waste_by_category
 
-    console.print(table)
+    for cat in WasteCategory:
+        cat_name = cat.value
+        amount = category_waste_map.get(cat_name, 0.0)
+        
+        if amount > 0:
+            status = "[bold red]✖ Action Needed[/]"
+            monthly_str = f"[bold red]${amount:,.2f}/mo[/]"
+            yearly_str = f"[bold red]${amount * 12:,.2f}/yr[/]"
+        else:
+            status = "[bold green]✔ Clean / Optimized[/]"
+            monthly_str = "[green]$0.00/mo[/]"
+            yearly_str = "[green]$0.00/yr[/]"
 
-    # 3. Category Breakdown
-    cat_table = Table(title="[bold]Savings Breakdown by Category[/]", box=box.SIMPLE)
-    cat_table.add_column("Category", style="bold white")
-    cat_table.add_column("Monthly Savings", justify="right", style="green")
-    cat_table.add_column("Yearly Impact", justify="right", style="bold green")
-
-    for cat, amount in report.waste_by_category.items():
-        cat_table.add_row(cat, f"${amount:,.2f}/mo", f"${amount * 12:,.2f}/yr")
+        cat_table.add_row(cat_name, status, monthly_str, yearly_str)
 
     console.print(cat_table)
 
+    # 3. Detailed Findings Table (Only when waste items exist)
+    if report.items:
+        table = Table(
+            title="[bold]Detailed Waste Findings & Action Plan[/]",
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            show_lines=True,
+        )
+        table.add_column("Category", style="magenta", width=24)
+        table.add_column("Resource ID / Name", style="cyan", width=26)
+        table.add_column("Details", style="white")
+        table.add_column("Monthly Savings", justify="right", style="bold green", width=16)
+
+        for item in report.items:
+            table.add_row(
+                item.category.value,
+                f"[bold]{item.resource_id}[/]\n[dim]{item.resource_name}[/]",
+                item.details,
+                f"${item.monthly_waste_usd:,.2f}/mo",
+            )
+
+        console.print(table)
+    else:
+        console.print(
+            Panel(
+                "[bold green]✔ No waste detected! All scanned categories are fully optimized.[/]",
+                border_style="green",
+                box=box.ROUNDED,
+            )
+        )
+
     # 4. CLI Remediation Commands if requested
-    if show_commands:
+    if show_commands and report.items:
         console.print("\n[bold yellow]🛠️ 1-Click AWS CLI Remediation Commands:[/]")
         for idx, item in enumerate(report.items, 1):
             if item.cli_command_fix:
