@@ -1,5 +1,4 @@
 import time
-import json
 import typer
 from typing import Optional
 from costslash.collectors.mock_collector import run_mock_scan
@@ -23,6 +22,9 @@ def scan(
     region: str = typer.Option(
         "us-east-1", "--region", "-r", help="AWS region to scan"
     ),
+    all_regions: bool = typer.Option(
+        False, "--all-regions", "-a", help="Scan ALL active AWS regions in parallel"
+    ),
     live: bool = typer.Option(
         False, "--live", "-l", help="Perform live scan using active AWS credentials"
     ),
@@ -39,17 +41,22 @@ def scan(
     """Scan an AWS account for unattached disks, idle NAT gateways, and unused IPs."""
     render_banner()
 
+    target_label = "ALL AWS regions" if all_regions else f"region '{region}'"
     status_msg = (
-        f"[bold cyan]Scanning live AWS account ({region})..."
+        f"[bold cyan]Scanning live AWS account across {target_label} in parallel..."
         if live
-        else f"[bold green]Running instant diagnostic scan on test AWS account ({region})..."
+        else f"[bold green]Running instant diagnostic scan on test AWS account ({target_label})..."
     )
 
     with console.status(status_msg, spinner="dots"):
-        time.sleep(1.0)
+        time.sleep(0.8)
         if live:
             try:
-                report = run_live_aws_scan(region=region, profile=profile)
+                report = run_live_aws_scan(
+                    region=region,
+                    all_regions=all_regions,
+                    profile=profile,
+                )
             except Exception as e:
                 console.print(f"[bold red]Live Scan Error:[/] {e}")
                 console.print("[yellow]Tip: Run with mock data using: [bold]costslash scan[/]")
@@ -72,7 +79,7 @@ def scan(
 @app.command(name="demo")
 def demo():
     """Run an instant demonstration scan."""
-    scan(region="us-east-1", live=False, profile=None, fix=True, export_json=None)
+    scan(region="us-east-1", all_regions=False, live=False, profile=None, fix=True, export_json=None)
 
 
 if __name__ == "__main__":

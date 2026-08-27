@@ -1,12 +1,10 @@
 from typing import List, Dict, Any
-from datetime import datetime, timezone
 from costslash.models import WasteItem, WasteCategory
 from costslash.pricing import (
     EBS_GP2_PRICE_PER_GB,
     EBS_GP3_PRICE_PER_GB,
     EIP_MONTHLY_PENALTY,
     NAT_GATEWAY_MONTHLY_BASE,
-    EBS_SNAPSHOT_PRICE_PER_GB,
 )
 
 
@@ -47,8 +45,12 @@ def scan_gp2_volumes(volumes: List[Dict[str, Any]], region: str) -> List[WasteIt
     """Identify in-use GP2 volumes that can be upgraded to GP3 for an instant 20% cost reduction."""
     items = []
     for vol in volumes:
+        state = vol.get("State", "")
+        attachments = vol.get("Attachments", [])
         vol_type = vol.get("VolumeType", "")
-        if vol_type == "gp2":
+        
+        # Only in-use attached volumes should be upgraded (unattached ones should be deleted)
+        if vol_type == "gp2" and (state == "in-use" or len(attachments) > 0):
             vol_id = vol.get("VolumeId", "unknown")
             size_gb = vol.get("Size", 0)
             gp2_cost = size_gb * EBS_GP2_PRICE_PER_GB
@@ -113,7 +115,6 @@ def scan_nat_gateways(nat_gateways: List[Dict[str, Any]], region: str) -> List[W
                 if tag.get("Key") == "Name":
                     name = tag.get("Value", "unnamed")
 
-            # In mock or low-traffic environments, detect potential idle gateways
             if "idle" in name.lower() or "test" in name.lower() or "staging" in name.lower():
                 items.append(
                     WasteItem(
