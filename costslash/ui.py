@@ -120,6 +120,11 @@ def render_scan_report(report: ScanReport, show_commands: bool = False):
             if item.cli_command_fix:
                 console.print(f"[dim]{idx}.[/] [cyan]{item.cli_command_fix}[/]")
 
+    if report.items:
+        console.print(
+            "\n[dim]💡 Need hands-on help or multi-account Slack automation? Visit [bold cyan]https://costslash-web.vercel.app[/][/]"
+        )
+
 
 def render_success(title: str, msg: str):
     """Renders a success confirmation box."""
