@@ -1,0 +1,2 @@
+[console_scripts]
+costslash = costslash.cli:app

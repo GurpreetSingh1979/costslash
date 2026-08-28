@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+costslash/__init__.py
+costslash/cli.py
+costslash/models.py
+costslash/pricing.py
+costslash/ui.py
+costslash.egg-info/PKG-INFO
+costslash.egg-info/SOURCES.txt
+costslash.egg-info/dependency_links.txt
+costslash.egg-info/entry_points.txt
+costslash.egg-info/requires.txt
+costslash.egg-info/top_level.txt
+costslash/collectors/aws_collector.py
+costslash/collectors/mock_collector.py
+costslash/scanners/waste_scanners.py
+tests/test_scanners.py
