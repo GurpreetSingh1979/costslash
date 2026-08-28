@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 costslash/__init__.py
+costslash/__main__.py
 costslash/cli.py
 costslash/models.py
 costslash/pricing.py

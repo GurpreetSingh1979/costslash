@@ -20,7 +20,7 @@ def render_banner():
     """Renders the CostSlash CLI header banner."""
     banner = Text()
     banner.append("[+] CostSlash ", style="bold green")
-    banner.append("v0.1.1", style="dim white")
+    banner.append("v0.1.2", style="dim white")
     banner.append(" - Instant AWS Cloud Cost & Waste Optimization Scanner", style="italic white")
     console.print(Panel(banner, border_style="green", box=box.ROUNDED))
 

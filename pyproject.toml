@@ -1,6 +1,6 @@
 [project]
 name = "costslash"
-version = "0.1.1"
+version = "0.1.2"
 description = "Instant AWS Cloud Cost & Waste Optimization Scanner"
 readme = "README.md"
 requires-python = ">=3.10"
